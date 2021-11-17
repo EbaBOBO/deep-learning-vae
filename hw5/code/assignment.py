@@ -295,5 +295,3 @@ def main(args):
 if __name__ == "__main__":
     args = parseArguments()
     main(args)
-# x=load_mnist(1024)
-# print(x)
