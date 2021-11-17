@@ -6,7 +6,7 @@ import numpy as np
 import os
 import random
 import tensorflow as tf
-from tensorflow.math import sigmoid
+# from tensorflow.math import sigmoid
 from tqdm import tqdm
 from vae import VAE, CVAE, reparametrize, loss_function
 
@@ -57,7 +57,24 @@ def train_vae(model, train_loader, args, is_cvae=False):
     Returns:
     - total_loss: Sum of loss values of all batches.
     """
-    pass
+    total_loss = 0
+    # for i in range(10):
+    for train_input,label in train_loader:
+        train_input = tf.cast(train_input,tf.float32)
+        with tf.GradientTape() as tape:
+            if is_cvae:
+                target = one_hot(label,model.num_classes)
+                xhat, mu, logvar = model.call(train_input,target)
+            else:
+                xhat, mu, logvar = model.call(train_input)
+            loss = loss_function(xhat, train_input, mu, logvar)
+            # print('loss: ',loss)
+            total_loss += loss
+            gradients = tape.gradient(loss,model.trainable_variables)
+            model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    # print('total_loss:',total_loss)
+    return total_loss
+    pass 
 
 def load_mnist(batch_size, buffer_size=1024):
     """
@@ -278,3 +295,5 @@ def main(args):
 if __name__ == "__main__":
     args = parseArguments()
     main(args)
+# x=load_mnist(1024)
+# print(x)

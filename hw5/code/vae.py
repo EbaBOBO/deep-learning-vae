@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Reshape
-from tensorflow.math import exp, sqrt, square
+# from tensorflow.math import exp, sqrt, square
 
 
 class VAE(tf.keras.Model):
@@ -9,11 +9,10 @@ class VAE(tf.keras.Model):
         super(VAE, self).__init__()
         self.input_size = input_size # H*W
         self.latent_size = latent_size  # Z
-        self.hidden_dim = None  # H_d
-        self.encoder = None
-        self.mu_layer = None
-        self.logvar_layer = None
-        self.decoder = None
+        self.hidden_dim = 200  # H_d
+        self.mu_layer = tf.keras.layers.Dense(self.latent_size)
+        self.logvar_layer = tf.keras.layers.Dense(self.latent_size)
+        # self.decoder = None
 
         ############################################################################################
         # TODO: Implement the fully-connected encoder architecture described in the notebook.      #
@@ -23,8 +22,14 @@ class VAE(tf.keras.Model):
         # features into estimates of the mean and log-variance of the posterior over the latent    #
         # vectors; the mean and log-variance estimates will both be tensors of shape (N, Z).       #
         ############################################################################################
-        # Replace "pass" statement with your code
-        pass
+        self.encoder = tf.keras.Sequential([
+                tf.keras.layers.InputLayer(input_shape = (1,28,28)),
+                tf.keras.layers.Reshape(target_shape = (self.input_size,)),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu')
+                ])
+
 
         ############################################################################################
         # TODO: Implement the fully-connected decoder architecture described in the notebook.      #
@@ -32,7 +37,17 @@ class VAE(tf.keras.Model):
         # shape (N, Z) and outputs a tensor of estimated images of shape (N, 1, H, W).             #
         ############################################################################################
         # Replace "pass" statement with your code
-        pass
+        self.decoder = tf.keras.Sequential([
+                tf.keras.layers.InputLayer(input_shape = (self.latent_size,)),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.input_size, activation= 'sigmoid'),
+                tf.keras.layers.Reshape(target_shape = (1,28,28)),
+                ])
+
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+        
 
         ############################################################################################
         #                                      END OF YOUR CODE                                    #
@@ -51,9 +66,9 @@ class VAE(tf.keras.Model):
         - mu: Matrix representing estimated posterior mu (N, Z), with Z latent space dimension
         - logvar: Matrix representing estimataed variance in log-space (N, Z), with Z latent space dimension
         """
-        x_hat = None
-        mu = None
-        logvar = None
+        # x_hat = None
+        # mu = None
+        # logvar = None
         ############################################################################################
         # TODO: Implement the forward pass by following these steps                                #
         # (1) Pass the input batch through the encoder model to get posterior mu and logvariance   #
@@ -61,7 +76,12 @@ class VAE(tf.keras.Model):
         # (3) Pass z through the decoder to resconstruct x                                         #
         ############################################################################################
         # Replace "pass" statement with your code
-        pass
+        encoder = self.encoder(x)
+        mu = self.mu_layer(encoder)
+        logvar = self.logvar_layer(encoder)
+        z = reparametrize(mu, logvar)
+        decoder = self.decoder(z)
+        x_hat = decoder
 
         ############################################################################################
         #                                      END OF YOUR CODE                                    #
@@ -75,10 +95,10 @@ class CVAE(tf.keras.Model):
         self.input_size = input_size # H*W
         self.latent_size = latent_size # Z
         self.num_classes = num_classes # C
-        self.hidden_dim = None # H_d
+        self.hidden_dim = 200 # H_d
         self.encoder = None
-        self.mu_layer = None
-        self.logvar_layer = None
+        self.mu_layer = tf.keras.layers.Dense(self.latent_size)
+        self.logvar_layer = tf.keras.layers.Dense(self.latent_size)
         self.decoder = None
 
         ############################################################################################
@@ -88,14 +108,28 @@ class CVAE(tf.keras.Model):
         # to posterior mu and posterior log-variance estimates of the latent space (N, Z)          #
         ############################################################################################
         # Replace "pass" statement with your code
-        pass
+        self.encoder = tf.keras.Sequential([
+                tf.keras.layers.InputLayer(input_shape = (self.input_size+self.num_classes,)),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu')
+                ])
 
         ############################################################################################
         # TODO: Define a fully-connected decoder as described in the notebook that transforms the  #
         # latent space (N, Z + C) to the estimated images of shape (N, 1, H, W).                   #
         ############################################################################################
         # Replace "pass" statement with your code
-        pass
+        self.decoder = tf.keras.Sequential([
+                tf.keras.layers.InputLayer(input_shape = (self.latent_size+num_classes,)),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.hidden_dim, activation= 'relu'),
+                tf.keras.layers.Dense(self.input_size, activation= 'sigmoid'),
+                tf.keras.layers.Reshape(target_shape = (1,28,28)),
+                ])
+
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
         ############################################################################################
         #                                      END OF YOUR CODE                                    #
@@ -126,7 +160,15 @@ class CVAE(tf.keras.Model):
         # (3) Pass concatenation of z and one hot vectors through the decoder to resconstruct x    #
         ############################################################################################
         # Replace "pass" statement with your code
-        pass
+        input = tf.reshape(x,[x.shape[0],x.shape[2]*x.shape[3]])
+        encoder1 = tf.concat([input,c],1)
+        encoder = self.encoder(encoder1)
+        mu = self.mu_layer(encoder)
+        logvar = self.logvar_layer(encoder)
+        z = reparametrize(mu, logvar)
+        decoder1 = tf.concat([z,c],1)
+        decoder = self.decoder(decoder1)
+        x_hat = decoder
 
         ############################################################################################
         #                                      END OF YOUR CODE                                    #
@@ -156,13 +198,15 @@ def reparametrize(mu, logvar):
     - z: Estimated latent vectors, where z[i, j] is a random value sampled from a Gaussian with
          mean mu[i, j] and log-variance logvar[i, j].
     """
-    z = None
+    # z = None
     ################################################################################################
     # TODO: Reparametrize by initializing epsilon as a normal distribution and scaling by          #
     # posterior mu and sigma to estimate z                                                         #
     ################################################################################################
     # Replace "pass" statement with your code
-    pass
+    epsilon = tf.random.normal(tf.shape(mu), mean=0.0, stddev=1.0)
+    z = mu + tf.exp(logvar / 2) * epsilon
+
 
     ################################################################################################
     #                              END OF YOUR CODE                                                #
@@ -201,12 +245,15 @@ def loss_function(x_hat, x, mu, logvar):
     Returns:
     - loss: Tensor containing the scalar loss for the negative variational lowerbound
     """
-    loss = None
+    # loss = None
     ################################################################################################
     # TODO: Compute negative variational lowerbound loss as described in the notebook              #
     ################################################################################################
     # Replace "pass" statement with your code
-    pass
+    reconstruction_loss = bce_function(x_hat, x)
+    kl = -1/2*tf.reduce_sum(1 + tf.math.log(tf.square(logvar)) - tf.square(mu) - tf.square(logvar))
+    loss = (reconstruction_loss + kl)/x.shape[0]
+
     
     ################################################################################################
     #                            END OF YOUR CODE                                                  #
