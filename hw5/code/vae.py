@@ -9,7 +9,7 @@ class VAE(tf.keras.Model):
         super(VAE, self).__init__()
         self.input_size = input_size # H*W
         self.latent_size = latent_size  # Z
-        self.hidden_dim = 200  # H_d
+        self.hidden_dim = 500 # H_d
         self.mu_layer = tf.keras.layers.Dense(self.latent_size)
         self.logvar_layer = tf.keras.layers.Dense(self.latent_size)
         # self.decoder = None
@@ -95,7 +95,7 @@ class CVAE(tf.keras.Model):
         self.input_size = input_size # H*W
         self.latent_size = latent_size # Z
         self.num_classes = num_classes # C
-        self.hidden_dim = 200 # H_d
+        self.hidden_dim = 500 # H_d
         self.encoder = None
         self.mu_layer = tf.keras.layers.Dense(self.latent_size)
         self.logvar_layer = tf.keras.layers.Dense(self.latent_size)
