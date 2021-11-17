@@ -251,7 +251,7 @@ def loss_function(x_hat, x, mu, logvar):
     ################################################################################################
     # Replace "pass" statement with your code
     reconstruction_loss = bce_function(x_hat, x)
-    kl = -1/2*tf.reduce_sum(1 + tf.math.log(tf.square(logvar)) - tf.square(mu) - tf.square(logvar))
+    kl = -1/2*tf.reduce_sum(1 + logvar - tf.square(mu) - tf.exp(logvar))
     loss = (reconstruction_loss + kl)/x.shape[0]
 
     
